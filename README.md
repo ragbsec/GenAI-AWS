@@ -1516,6 +1516,179 @@ Use this roadmap to move from first agent to enterprise-grade fleet. Each phase 
 ```
 
 ---
+**Agent Memory & Context Architectures (2026 Patterns)**
+Modern agentic systems distinguish between Working Context (what the agent sees now) and Persistent Memory (what the agent learns over time). Effective implementations prioritize "Just-in-Time" context delivery to avoid model "distraction" and reduce token costs.
+
+**1. Memory Hierarchy & Flow**
+The following ASCII diagram illustrates the standard 2026 architecture for high-autonomy agents:
+[ USER INPUT / GOAL ]
+                │
+    ┌───────────▼───────────┐          ┌─────────────────────────┐
+    │    CONTEXT ASSEMBLY   │◄─────────┤  SHORT-TERM (BUFFER)    │
+    │ (Sliding Window/RAG)  │          │ Sliding / Summarized    │
+    └───────────┬───────────┘          └────────────┬────────────┘
+                │                                   │
+    ┌───────────▼───────────┐           [ COMPRESSION / DECAY ]
+    │    AGENT REASONING    │                       │
+    │ (Plan-Act-Reflect)    │          ┌────────────▼────────────┐
+    └───────────┬───────────┘          │    LONG-TERM MEMORY     │
+                │◄─────────────────────┤ (Vector / Graph DB)     │
+    ┌───────────▼───────────┐          └────────────┬────────────┘
+    │  TOOL / ENVIRONMENT   │                       │
+    │   (Execution Layer)   │          ┌────────────┴────────────┐
+    └───────────────────────┘          │ Episodic │ Semantic     │
+                                       │ (Events) │ (Facts)      │
+                                       └─────────────────────────┘
+**2. Proven Memory Patterns**
+Episodic Memory (The "Log"): Stores raw records of past tool-call trajectories and user feedback. Agents use this to avoid repeating failed paths.
+
+Semantic Memory (The "Knowledge"): Distilled facts learned from interactions (e.g., "This user prefers Python over Java for scripts").
+
+Procedural Memory (The "Skills"): Specialized instructions or prompt-chains the agent has "learned" are effective for specific recurring tasks.
+
+Hierarchical Memory: Using a supervisor agent to prune and consolidate memories, moving important signals from short-term to long-term storage while "forgetting" noise.
+
+**3. Latest 2026 Developments & Optimizations**
+KV Cache Compression (TurboQuant): Emerging techniques like TurboQuant allow for 3-bit quantization of the KV cache with near-zero accuracy loss. This enables agents to maintain massive "active" context windows (1M+ tokens) with minimal latency.
+
+Model Context Protocol (MCP): A new standard for connecting agents to data sources. Instead of writing custom connectors for every tool, MCP provides a unified interface for agents to query external state, effectively making external databases feel like local "memory."
+
+Progressive Context Disclosure: Rather than stuffing the system prompt, modern agents use a "retrieval loop." The agent identifies what it doesn't know, calls a memory tool, and receives only the relevant "just-in-time" data required for the next step.
+
+Memory Consolidation & Decay: Implementing "forgetting curves" where low-relevance memories are decayed or archived. This prevents the "retrieval noise" that often degrades agent performance in long-running projects.
+
+**To step up from a single agent to a high-scale Multi-Agent Orchestration (MAO) system**, you need a "Control Plane" that handles handoffs and shared state.
+
+Here is the complete architectural map for 2026-standard multi-agent memory and orchestration, followed by a rigorous testing protocol.
+1. Multi-Agent Memory & Orchestration Architecture
+This diagram shows how a Supervisory Orchestrator manages specialized sub-agents while maintaining a Unified Memory Fabric via the Model Context Protocol (MCP).
+[ USER REQUEST / COMPLEX GOAL ]
+                   │
+    ┌──────────────▼───────────────────────────────┐
+    │       ORCHESTRATOR / ROUTER                  │◄──┐ [MCP TOOL DISCOVERY]
+    │ (Intent Classification & Task Decomposition) │   │ (Fetches Tool Specs)
+    └──────────────┬───────────────────────────────┘   │
+                   │                                   │
+      ┌────────────┼────────────┬────────────┐         │
+      ▼            ▼            ▼            ▼         │
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
+│  AGENT A │  │  AGENT B │  │  AGENT C │  │  AGENT D │ │
+│ (Coder)  │  │ (Search) │  │ (Writer) │  │ (Tools)  │ │
+└─────┬────┘  └─────┬────┘  └─────┬────┘  └─────┬────┘ │
+      │             │             │             │      │
+      └───────┬─────┴─────────────┴───────┬─────┘      │
+              │                           │            │
+    ┌─────────▼──────────┐      ┌─────────▼──────────┐ │
+    │   LOCAL CONTEXT    │      │    SHARED STATE    │─┘
+    │ (Worker-Specific)  │      │  (Global Blackboard)│
+    └─────────┬──────────┘      └─────────┬──────────┘
+              │                           │
+              └─────────────┬─────────────┘
+                            │
+              ┌─────────────▼─────────────┐
+              │    UNIFIED MEMORY FABRIC  │
+              │ (Vector + Graph + MCP DB) │
+              └─────────────┬─────────────┘
+                            │
+              [ MEMORY CONSOLIDATION LOOP ]
+              (Summarize -> Prune -> Archive)
+To step up from a single agent to a high-scale Multi-Agent Orchestration (MAO) system, you need a "Control Plane" that handles handoffs and shared state.
+
+Here is the complete architectural map for 2026-standard multi-agent memory and orchestration, followed by a rigorous testing protocol.
+
+1. Multi-Agent Memory & Orchestration Architecture
+This diagram shows how a Supervisory Orchestrator manages specialized sub-agents while maintaining a Unified Memory Fabric via the Model Context Protocol (MCP).
+
+Plaintext
+       [ USER REQUEST / COMPLEX GOAL ]
+                   │
+    ┌──────────────▼───────────────────────────────┐
+    │       ORCHESTRATOR / ROUTER                  │◄──┐ [MCP TOOL DISCOVERY]
+    │ (Intent Classification & Task Decomposition) │   │ (Fetches Tool Specs)
+    └──────────────┬───────────────────────────────┘   │
+                   │                                   │
+      ┌────────────┼────────────┬────────────┐         │
+      ▼            ▼            ▼            ▼         │
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
+│  AGENT A │  │  AGENT B │  │  AGENT C │  │  AGENT D │ │
+│ (Coder)  │  │ (Search) │  │ (Writer) │  │ (Tools)  │ │
+└─────┬────┘  └─────┬────┘  └─────┬────┘  └─────┬────┘ │
+      │             │             │             │      │
+      └───────┬─────┴─────────────┴───────┬─────┘      │
+              │                           │            │
+    ┌─────────▼──────────┐      ┌─────────▼──────────┐ │
+    │   LOCAL CONTEXT    │      │    SHARED STATE    │─┘
+    │ (Worker-Specific)  │      │  (Global Blackboard)│
+    └─────────┬──────────┘      └─────────┬──────────┘
+              │                           │
+              └─────────────┬─────────────┘
+                            │
+              ┌─────────────▼─────────────┐
+              │    UNIFIED MEMORY FABRIC  │
+              │ (Vector + Graph + MCP DB) │
+              └─────────────┬─────────────┘
+                            │
+              [ MEMORY CONSOLIDATION LOOP ]
+              (Summarize -> Prune -> Archive)
+**. Key Orchestration Patterns**
+The Blackboard Pattern: All agents write to a shared "Global State" (the blackboard). The Orchestrator monitors this state to decide who acts next.
+
+Handoff / Swarm: Agents "hand off" the conversation to the next specialist. Agent A (Triage) finishes and explicitly calls Agent B (Support).
+
+MCP (Model Context Protocol) Integration: Instead of agents having hard-coded APIs, they use MCP servers to pull "just-in-time" memory and tool definitions. This decouples the agent logic from the data source.
+
+**The Blackboard Pattern (Shared State)**
+In this pattern, agents do not talk to each other. They "read and write" to a central data store. It is best for complex, non-linear tasks where any agent might need to chime in based on the current state.
+    ┌──────────┐      ┌──────────┐      ┌──────────┐
+    │ Agent A  │      │ Agent B  │      │ Agent C  │
+    │ (Triage) │      │ (Search) │      │ (Writer) │
+    └────┬─────┘      └────┬─────┘      └────┬─────┘
+         │                 │                 │
+         │      ┌──────────▼──────────┐      │
+         └─────►│  CENTRAL BLACKBOARD  │◄─────┘
+                │   (Shared Memory)   │
+                └──────────┬──────────┘
+                           │
+                ┌──────────▼──────────┐
+                │   ORCHESTRATOR /    │
+                │   STATE OBSERVER    │
+                └─────────────────────┘
+
+The Handoff / Swarm Pattern (Peer-to-Peer)
+This is a linear or cyclic pattern where an agent finishes its sub-task and explicitly "transfers" the conversation to the next specialized agent.
+
+[User] ──► [Router Agent]
+                 │
+                 ▼
+          ┌────────────┐      ┌────────────┐      ┌────────────┐
+          │  Agent A   │─────►│  Agent B   │─────►│  Agent C   │
+          │ (Identity) │      │ (Billing)  │      │ (Success)  │
+          └────────────┘      └────────────┘      └────────────┘
+                 │                   │                   │
+                 └─────────┬─────────┴───────────────────┘
+                           ▼
+                    [ Final Response ]
+**
+**The Supervisory Pattern (Hierarchical)****
+
+A "Manager" agent decomposes the user's goal into sub-tasks and assigns them to "Worker" agents. The workers report back only to the supervisor.
+             ┌─────────────────────┐
+             │     SUPERVISOR      │
+             │ (Planner / Judge)   │
+             └──────────┬──────────┘
+                        │
+        ┌───────────────┼───────────────┐
+        │               │               │
+  ┌─────▼─────┐   ┌─────▼─────┐   ┌─────▼─────┐
+  │  Worker 1 │   │  Worker 2 │   │  Worker 3 │
+  │ (Research)│   │  (Coding) │   │ (Testing) │
+  └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
+        │               │               │
+        └───────────────┼───────────────┘
+                        ▼
+             ┌─────────────────────┐
+             │  RESULT AGGREGATION │
+             └─────────────────────┘
 
 ## Key AWS Services Used
 
